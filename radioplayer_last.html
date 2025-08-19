@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #8B0000 0%, #4B0000 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .radio-player {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .radio-player::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #DC143C, #8B0000, #DC143C);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 200% 0; }
+            50% { background-position: -200% 0; }
+        }
+
+        .station-info {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .station-logo {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .station-logo::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 4s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .station-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .station-tagline {
+            font-size: 0.9rem;
+            color: #718096;
+            font-weight: 400;
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+
+        .play-button {
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #DC143C, #8B0000);
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(220, 20, 60, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .play-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(220, 20, 60, 0.4);
+        }
+
+        .play-button:active {
+            transform: translateY(-1px);
+        }
+
+        .play-button.loading::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid transparent;
+            border-top: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 120px;
+        }
+
+        .volume-icon {
+            font-size: 1.2rem;
+            color: #667eea;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #e2e8f0;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .status-display {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: #cccccc;
+            font-weight: 500;
+        }
+
+        .track-info {
+            display: none;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .track-info.visible {
+            display: block;
+        }
+
+        .track-title {
+            font-size: 1rem;
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            max-height: 2.4em;
+            overflow: hidden;
+            line-height: 1.2;
+        }
+
+        .track-artist {
+            font-size: 0.85rem;
+            color: #DC143C;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.playing {
+            background: #48bb78;
+            box-shadow: 0 0 10px rgba(72, 187, 120, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .equalizer {
+            display: flex;
+            align-items: end;
+            justify-content: center;
+            gap: 3px;
+            height: 40px;
+            margin-bottom: 1rem;
+        }
+
+        .eq-bar {
+            width: 4px;
+            background: linear-gradient(to top, #DC143C, #8B0000);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+            opacity: 0.3;
+        }
+
+        .eq-bar.active {
+            opacity: 1;
+            animation: dance 0.8s ease-in-out infinite alternate;
+        }
+
+        .eq-bar:nth-child(1) { animation-delay: 0.1s; }
+        .eq-bar:nth-child(2) { animation-delay: 0.2s; }
+        .eq-bar:nth-child(3) { animation-delay: 0.3s; }
+        .eq-bar:nth-child(4) { animation-delay: 0.4s; }
+        .eq-bar:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes dance {
+            0% { height: 10px; }
+            100% { height: 35px; }
+        }
+
+        @media (max-width: 480px) {
+            .radio-player {
+                padding: 1.5rem;
+                margin: 10px;
+                max-width: none;
+            }
+
+            .station-logo {
+                width: 100px;
+                height: 100px;
+                font-size: 2rem;
+            }
+
+            .station-name {
+                font-size: 1.3rem;
+            }
+
+            .play-button {
+                width: 70px;
+                height: 70px;
+                font-size: 1.8rem;
+            }
+
+            .volume-control {
+                max-width: 100px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .player-controls {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .volume-control {
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="radio-player">
+        <div class="station-info">
+            <div class="station-logo" style="background: linear-gradient(135deg, #DC143C, #8B0000);">🎵</div>
+           <div class="station-name">Radio Name</div>
+            <div class="station-tagline">your best music 24/7</div>
+        </div>
+
+        <div class="equalizer">
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+        </div>
+
+        <div class="status-display">
+            <div class="status-text">
+                <span class="status-indicator"></span>
+                push to listen
+            </div>
+            <div class="track-info" id="trackInfo">
+                <div class="track-title" id="trackTitle"></div>
+                <div class="track-artist" id="trackArtist"></div>
+            </div>
+        </div>
+
+        <div class="player-controls">
+            <button class="play-button" id="playButton">
+                ▶️
+            </button>
+            
+            <div class="volume-control">
+                <span class="volume-icon">🔊</span>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="70">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class RadioPlayer {
+            constructor() {
+                // URL of the stream
+                this.streamUrl = 'https://hosting.streamurlexample.com:1065/stream';
+                this.audio = null;
+                this.isPlaying = false;
+                this.isLoading = false;
+                
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.playButton = document.getElementById('playButton');
+                this.volumeSlider = document.getElementById('volumeSlider');
+                this.statusText = document.querySelector('.status-text');
+                this.statusIndicator = document.querySelector('.status-indicator');
+                this.eqBars = document.querySelectorAll('.eq-bar');
+                this.trackInfo = document.getElementById('trackInfo');
+                this.trackTitle = document.getElementById('trackTitle');
+                this.trackArtist = document.getElementById('trackArtist');
+            }
+
+            bindEvents() {
+                this.playButton.addEventListener('click', () => this.togglePlay());
+                this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
+                
+                // keyboard events managmeent 
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.togglePlay();
+                    }
+                });
+            }
+
+            async togglePlay() {
+                if (this.isLoading) return;
+
+                if (!this.isPlaying) {
+                    await this.play();
+                } else {
+                    this.stop();
+                }
+            }
+
+            async play() {
+                this.setLoading(true);
+                
+                try {
+                    if (!this.audio) {
+                        this.audio = new Audio(this.streamUrl);
+                        this.setupAudioEvents();
+                    }
+
+                    await this.audio.play();
+                } catch (error) {
+                    console.error('Erreur de lecture:', error);
+                    this.updateStatus('Error of connexion to the  radio stream ');
+                    this.setLoading(false);
+                }
+            }
+
+            stop() {
+                if (this.audio) {
+                    this.audio.pause();
+                    this.audio = null; // Destroy the audio object
+                }
+                this.setPlaying(false);
+                this.stopMetadataPolling();
+                this.hideTrackInfo();
+            }
+
+            setupAudioEvents() {
+                this.audio.addEventListener('canplay', () => {
+                    this.setLoading(false);
+                    this.setPlaying(true);
+                });
+
+                this.audio.addEventListener('waiting', () => {
+                    this.updateStatus('putting in buffer memory...');
+                });
+
+                this.audio.addEventListener('playing', () => {
+                    this.updateStatus('playing');
+                    this.startMetadataPolling();
+                });
+
+                this.audio.addEventListener('error', (e) => {
+                    console.error('Erreur audio:', e);
+                    this.updateStatus('Error of stream reading');
+                    this.setLoading(false);
+                    this.setPlaying(false);
+                });
+
+                this.audio.addEventListener('pause', () => {
+                    this.setPlaying(false);
+                    this.stopMetadataPolling();
+                });
+
+                this.audio.addEventListener('ended', () => {
+                    this.setPlaying(false);
+                    this.stopMetadataPolling();
+                });
+
+                // listening of metadata of  stream
+                this.audio.addEventListener('loadstart', () => {
+                    this.checkForMetadata();
+                });
+            }
+
+            setVolume(value) {
+                if (this.audio) {
+                    this.audio.volume = value / 100;
+                }
+            }
+
+            setPlaying(playing) {
+                this.isPlaying = playing;
+                this.playButton.textContent = playing ? '⏸️' : '▶️';
+                
+                if (playing) {
+                    this.statusIndicator.classList.add('playing');
+                    this.startEqualizer();
+                    this.updateStatus('En cours de lecture');
+                } else {
+                    this.statusIndicator.classList.remove('playing');
+                    this.stopEqualizer();
+                    this.updateStatus('Lecture arrêtée');
+                }
+            }
+
+            setLoading(loading) {
+                this.isLoading = loading;
+                this.playButton.classList.toggle('loading', loading);
+                
+                if (loading) {
+                    this.updateStatus('Connexion en cours...');
+                }
+            }
+
+            updateStatus(message) {
+                this.statusText.innerHTML = `<span class="status-indicator ${this.isPlaying ? 'playing' : ''}"></span>${message}`;
+            }
+
+            startEqualizer() {
+                this.eqBars.forEach(bar => {
+                    bar.classList.add('active');
+                });
+            }
+
+            stopEqualizer() {
+                this.eqBars.forEach(bar => {
+                    bar.classList.remove('active');
+                });
+            }
+
+            // function for metadata management 
+            startMetadataPolling() {
+                // stop previous   polling if exists
+                this.stopMetadataPolling();
+                
+                // try to get metadata every 10 seconds
+                this.metadataInterval = setInterval(() => {
+                    this.checkForMetadata();
+                }, 10000);
+
+                // check after  2 secondes
+                setTimeout(() => {
+                    this.checkForMetadata();
+                }, 2000);
+            }
+
+            stopMetadataPolling() {
+                if (this.metadataInterval) {
+                    clearInterval(this.metadataInterval);
+                    this.metadataInterval = null;
+                }
+            }
+
+            async checkForMetadata() {
+                if (!this.streamUrl) return;
+
+                try {
+                    // try get   metadata via API of  streaming server de streaming
+                    const metadataUrl = this.streamUrl.replace(/\/[^\/]*$/, '/status-json.xsl') || 
+                                       this.streamUrl.replace(/\/[^\/]*$/, '/stats') ||
+                                       this.streamUrl + '/stats';
+                    
+                    const response = await fetch(metadataUrl, { 
+                        method: 'GET',
+                        mode: 'cors',
+                        cache: 'no-cache'
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.parseMetadata(data);
+                    } else {
+                        // try other function for Shoutcast/Icecast
+                        this.tryAlternativeMetadata();
+                    }
+                } catch (error) {
+                    // if request fail try something else
+                    this.tryAlternativeMetadata();
+                }
+            }
+
+            tryAlternativeMetadata() {
+                // Méthode alternative : essayer de récupérer les métadonnées via des en-têtes HTTP
+                if (this.audio && this.audio.readyState >= 2) {
+                    // Simuler des métadonnées pour tester (à remplacer par la vraie logique)
+                    // Dans un vrai cas, vous pourriez utiliser une API de votre serveur radio
+                    this.simulateMetadata();
+                }
+            }
+
+            simulateMetadata() {
+                // Cette fonction simule la récupération de métadonnées
+                // Dans un environnement de production, remplacez ceci par la vraie API de votre serveur radio
+                const sampleTracks = [
+                    { title: "En cours de lecture...", artist: "Informations non disponibles" },
+                    { title: "Beautiful Day", artist: "U2" },
+                    { title: "Bohemian Rhapsody", artist: "Queen" },
+                    { title: "Hotel California", artist: "Eagles" },
+                    { title: "Imagine", artist: "John Lennon" }
+                ];
+                
+                // Afficher un échantillon aléatoire (pour la démo)
+                if (Math.random() > 0.7) {
+                    const track = sampleTracks[Math.floor(Math.random() * sampleTracks.length)];
+                    this.updateTrackInfo(track.title, track.artist);
+                }
+            }
+
+            parseMetadata(data) {
+                let title = '';
+                let artist = '';
+
+                // Parser les différents formats de métadonnées
+                if (data.icestats && data.icestats.source) {
+                    // Format Icecast
+                    const source = Array.isArray(data.icestats.source) ? data.icestats.source[0] : data.icestats.source;
+                    const titleInfo = source.title || source.stream_title || '';
+                    this.parseTrackString(titleInfo);
+                } else if (data.streamtitle) {
+                    // Format Shoutcast
+                    this.parseTrackString(data.streamtitle);
+                } else if (data.title) {
+                    // Format générique
+                    this.parseTrackString(data.title);
+                }
+            }
+
+            parseTrackString(trackString) {
+                if (!trackString || trackString.trim() === '') return;
+
+                // Essayer de séparer l'artiste et le titre
+                let artist = '';
+                let title = '';
+
+                if (trackString.includes(' - ')) {
+                    const parts = trackString.split(' - ');
+                    artist = parts[0].trim();
+                    title = parts.slice(1).join(' - ').trim();
+                } else if (trackString.includes(' by ')) {
+                    const parts = trackString.split(' by ');
+                    title = parts[0].trim();
+                    artist = parts[1].trim();
+                } else {
+                    title = trackString.trim();
+                    artist = '';
+                }
+
+                if (title || artist) {
+                    this.updateTrackInfo(title, artist);
+                }
+            }
+
+            updateTrackInfo(title, artist) {
+                if (title && title !== this.currentTitle) {
+                    this.currentTitle = title;
+                    this.currentArtist = artist;
+
+                    this.trackTitle.textContent = title;
+                    this.trackArtist.textContent = artist;
+                    
+                    if (title !== "En cours de lecture...") {
+                        this.showTrackInfo();
+                    }
+                }
+            }
+
+            showTrackInfo() {
+                this.trackInfo.classList.add('visible');
+            }
+
+            hideTrackInfo() {
+                this.trackInfo.classList.remove('visible');
+                this.currentTitle = '';
+                this.currentArtist = '';
+            }
+        }
+
+        // Initialisation du lecteur radio
+        document.addEventListener('DOMContentLoaded', () => {
+            window.radioPlayer = new RadioPlayer();
+        });
+    </script>
+</body>
+</html>
